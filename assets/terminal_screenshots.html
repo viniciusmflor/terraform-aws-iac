@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { background: #1e1e1e; margin: 0; padding: 20px; font-family: 'Monaco', 'Menlo', monospace; }
+  .terminal {
+    background: #0d1117;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    max-width: 900px;
+  }
+  .titlebar {
+    background: #21262d;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .red { background: #ff5f57; }
+  .yellow { background: #febc2e; }
+  .green { background: #28c840; }
+  .title { color: #8b949e; font-size: 13px; margin-left: 8px; }
+  .content { padding: 16px 20px; font-size: 13px; line-height: 1.6; color: #e6edf3; }
+  .prompt { color: #58a6ff; }
+  .cmd { color: #ffffff; }
+  .out-green { color: #3fb950; }
+  .out-yellow { color: #d29922; }
+  .out-blue { color: #58a6ff; }
+  .out-gray { color: #8b949e; }
+  .out-red { color: #f85149; }
+  .out-white { color: #e6edf3; }
+  pre { margin: 0; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<!-- 1. Versoes -->
+<div class="terminal" id="versoes">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <span class="title">Terminal — verificação das ferramentas</span>
+  </div>
+  <div class="content"><pre>
+<span class="prompt">$</span> <span class="cmd">terraform --version</span>
+<span class="out-green">Terraform v1.15.5</span>
+<span class="out-gray">on darwin_arm64</span>
+
+<span class="prompt">$</span> <span class="cmd">aws --version</span>
+<span class="out-white">aws-cli/2.34.64 Python/3.14.5 Darwin/25.3.0 source/arm64</span>
+
+<span class="prompt">$</span> <span class="cmd">aws sts get-caller-identity</span>
+<span class="out-white">{
+    "UserId": "AIDAXAQBISFG...",
+    "Account": "482112737613",
+    "Arn": "arn:aws:iam::482112737613:user/terraform-user"
+}</span></pre>
+  </div>
+</div>
+
+<!-- 2. terraform init -->
+<div class="terminal" id="init">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <span class="title">terraform init</span>
+  </div>
+  <div class="content"><pre>
+<span class="prompt">$</span> <span class="cmd">terraform init</span>
+
+<span class="out-white">Initializing provider plugins found in the configuration...</span>
+<span class="out-white">- Finding hashicorp/aws versions matching "~> 5.92"...</span>
+<span class="out-white">- Installing hashicorp/aws v5.100.0...</span>
+<span class="out-green">- Installed hashicorp/aws v5.100.0 (signed by HashiCorp)</span>
+
+<span class="out-white">Initializing the backend...</span>
+
+<span class="out-white">Terraform has created a lock file <span class="out-blue">.terraform.lock.hcl</span> to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.</span>
+
+<span class="out-green">Terraform has been successfully initialized!</span>
+
+<span class="out-gray">You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure.</span></pre>
+  </div>
+</div>
+
+<!-- 3. fmt + validate -->
+<div class="terminal" id="validate">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <span class="title">terraform fmt + terraform validate</span>
+  </div>
+  <div class="content"><pre>
+<span class="prompt">$</span> <span class="cmd">terraform fmt</span>
+<span class="out-gray">(sem output — arquivos já formatados corretamente)</span>
+
+<span class="prompt">$</span> <span class="cmd">terraform validate</span>
+<span class="out-green">Success! The configuration is valid.</span></pre>
+  </div>
+</div>
+
+<!-- 4. terraform plan -->
+<div class="terminal" id="plan">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <span class="title">terraform plan</span>
+  </div>
+  <div class="content"><pre>
+<span class="prompt">$</span> <span class="cmd">terraform plan</span>
+
+<span class="out-blue">data.aws_ami.ubuntu: Reading...</span>
+<span class="out-blue">data.aws_ami.ubuntu: Read complete after 0s [id=ami-0b17d8f9ce1b14ec1]</span>
+
+<span class="out-white">Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:</span>
+  <span class="out-green">+</span> <span class="out-white">create</span>
+
+<span class="out-white">Terraform will perform the following actions:</span>
+
+  <span class="out-white"># aws_instance.app_server will be created</span>
+  <span class="out-green">+</span> <span class="out-white">resource "aws_instance" "app_server" {</span>
+      <span class="out-green">+</span> <span class="out-white">ami           = "ami-0b17d8f9ce1b14ec1"</span>
+      <span class="out-green">+</span> <span class="out-white">arn           = (known after apply)</span>
+      <span class="out-green">+</span> <span class="out-white">instance_type = "t3.micro"</span>
+      <span class="out-green">+</span> <span class="out-white">tags = {</span>
+          <span class="out-green">+</span> <span class="out-white">"Name" = "learn-terraform"</span>
+      <span class="out-white">  }</span>
+    <span class="out-white">}</span>
+
+<span class="out-white"><span class="out-yellow">Plan:</span> 1 to add, 0 to change, 0 to destroy.</span></pre>
+  </div>
+</div>
+
+<!-- 5. terraform apply -->
+<div class="terminal" id="apply">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <span class="title">terraform apply -auto-approve</span>
+  </div>
+  <div class="content"><pre>
+<span class="prompt">$</span> <span class="cmd">terraform apply -auto-approve</span>
+
+<span class="out-blue">data.aws_ami.ubuntu: Reading...</span>
+<span class="out-blue">data.aws_ami.ubuntu: Read complete after 1s [id=ami-0b17d8f9ce1b14ec1]</span>
+
+<span class="out-white">  # aws_instance.app_server will be created</span>
+  <span class="out-green">+</span> <span class="out-white">resource "aws_instance" "app_server" {</span>
+      <span class="out-green">+</span> <span class="out-white">ami           = "ami-0b17d8f9ce1b14ec1"</span>
+      <span class="out-green">+</span> <span class="out-white">instance_type = "t3.micro"</span>
+      <span class="out-green">+</span> <span class="out-white">tags          = { "Name" = "learn-terraform" }</span>
+    <span class="out-white">}</span>
+
+<span class="out-white"><span class="out-yellow">Plan:</span> 1 to add, 0 to change, 0 to destroy.</span>
+
+<span class="out-yellow">aws_instance.app_server: Creating...</span>
+<span class="out-yellow">aws_instance.app_server: Still creating... [10s elapsed]</span>
+<span class="out-green">aws_instance.app_server: Creation complete after 13s [id=i-06439a33ab3d6c9cf]</span>
+
+<span class="out-green">Apply complete! Resources: 1 added, 0 changed, 0 destroyed.</span></pre>
+  </div>
+</div>
+
+<!-- 6. state list + show -->
+<div class="terminal" id="state">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <span class="title">terraform state list + terraform show</span>
+  </div>
+  <div class="content"><pre>
+<span class="prompt">$</span> <span class="cmd">terraform state list</span>
+<span class="out-white">data.aws_ami.ubuntu</span>
+<span class="out-white">aws_instance.app_server</span>
+
+<span class="prompt">$</span> <span class="cmd">terraform show</span>
+<span class="out-gray"># aws_instance.app_server:</span>
+<span class="out-white">resource "aws_instance" "app_server" {</span>
+    <span class="out-blue">ami</span>               <span class="out-white">= "ami-0b17d8f9ce1b14ec1"</span>
+    <span class="out-blue">arn</span>               <span class="out-white">= "arn:aws:ec2:sa-east-1:482112737613:instance/i-06439a33ab3d6c9cf"</span>
+    <span class="out-blue">availability_zone</span> <span class="out-white">= "sa-east-1a"</span>
+    <span class="out-blue">id</span>                <span class="out-white">= "i-06439a33ab3d6c9cf"</span>
+    <span class="out-blue">instance_state</span>    <span class="out-white">= "running"</span>
+    <span class="out-blue">instance_type</span>     <span class="out-white">= "t3.micro"</span>
+    <span class="out-blue">public_ip</span>         <span class="out-white">= "54.233.79.212"</span>
+    <span class="out-blue">private_ip</span>        <span class="out-white">= "172.31.1.133"</span>
+    <span class="out-white">tags = {</span>
+        <span class="out-white">"Name" = "learn-terraform"</span>
+    <span class="out-white">}</span>
+<span class="out-white">}</span></pre>
+  </div>
+</div>
+
+<!-- 7. terraform destroy -->
+<div class="terminal" id="destroy">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <span class="title">terraform destroy -auto-approve</span>
+  </div>
+  <div class="content"><pre>
+<span class="prompt">$</span> <span class="cmd">terraform destroy -auto-approve</span>
+
+<span class="out-red">aws_instance.app_server: Destroying... [id=i-06439a33ab3d6c9cf]</span>
+<span class="out-red">aws_instance.app_server: Still destroying... [10s elapsed]</span>
+<span class="out-red">aws_instance.app_server: Still destroying... [20s elapsed]</span>
+<span class="out-red">aws_instance.app_server: Still destroying... [30s elapsed]</span>
+<span class="out-green">aws_instance.app_server: Destruction complete after 31s</span>
+
+<span class="out-green">Destroy complete! Resources: 1 destroyed.</span></pre>
+  </div>
+</div>
+
+</body>
+</html>

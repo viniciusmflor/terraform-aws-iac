@@ -1,118 +1,54 @@
-# Terraform AWS IaC — Tutorial HashiCorp Get Started
+# Terraform AWS — Infraestrutura como Código
 
-Repositório criado como parte da atividade de **Infraestrutura como Código (IaC)** utilizando o [tutorial oficial da HashiCorp](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-create). O objetivo é provisionar uma instância EC2 na AWS de forma declarativa, versionada e reproduzível.
-
----
-
-## Sumário
-
-1. [Pré-requisitos](#1-pré-requisitos)
-2. [Instalação do Terraform e AWS CLI](#2-instalação-do-terraform-e-aws-cli)
-3. [Configuração das Credenciais AWS](#3-configuração-das-credenciais-aws)
-4. [Estrutura dos Arquivos Terraform](#4-estrutura-dos-arquivos-terraform)
-5. [Inicialização — `terraform init`](#5-inicialização--terraform-init)
-6. [Formatação e Validação](#6-formatação-e-validação)
-7. [Planejamento — `terraform plan`](#7-planejamento--terraform-plan)
-8. [Aplicação — `terraform apply`](#8-aplicação--terraform-apply)
-9. [Inspeção do Estado](#9-inspeção-do-estado)
-10. [Recursos Provisionados na AWS](#10-recursos-provisionados-na-aws)
-11. [Destruição da Infraestrutura — `terraform destroy`](#11-destruição-da-infraestrutura--terraform-destroy)
-12. [Referências](#12-referências)
+Atividade prática seguindo o [tutorial oficial da HashiCorp](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-create) para provisionar uma instância EC2 na AWS usando Terraform. O objetivo é entender na prática como IaC funciona: escrever a infraestrutura em código, versionar, e conseguir recriar o ambiente de forma consistente.
 
 ---
 
-## 1. Pré-requisitos
+## Pré-requisitos
 
-| Ferramenta | Versão mínima | Finalidade |
-|---|---|---|
-| Terraform CLI | 1.2.0+ | Gerenciar infraestrutura como código |
-| AWS CLI | 2.x | Autenticar e interagir com a AWS |
-| Conta AWS | — | Provisionar recursos na nuvem |
-| IAM User | Permissão `AmazonEC2FullAccess` | Acesso programático seguro |
+- Terraform CLI 1.2+
+- AWS CLI 2.x
+- Conta AWS com um IAM User com permissão `AmazonEC2FullAccess`
+- macOS com Homebrew instalado
 
-> **Importante:** Nunca utilize as credenciais da conta root da AWS para acesso programático. Crie sempre um IAM User dedicado.
+> **Atenção:** nunca use as credenciais da conta root da AWS para acesso programático. Crie um IAM User dedicado.
 
 ---
 
-## 2. Instalação do Terraform e AWS CLI
+## Instalação
 
-O Terraform foi removido do repositório padrão do Homebrew. É necessário adicionar o tap oficial da HashiCorp:
+O Terraform saiu do repositório padrão do Homebrew, então é preciso adicionar o tap da HashiCorp antes de instalar:
 
 ```bash
-# Adicionar o tap oficial da HashiCorp
 brew tap hashicorp/tap
-
-# Instalar Terraform e AWS CLI
 brew install hashicorp/tap/terraform awscli
 ```
 
-**Verificação das instalações:**
+Depois de instalar, verifiquei que tudo estava funcionando:
 
-```
-$ terraform --version
-Terraform v1.15.5
-on darwin_arm64
-
-$ aws --version
-aws-cli/2.34.64 Python/3.14.5 Darwin/25.3.0 source/arm64
-```
-
-> Em casos de erro com Homebrew (Command Line Tools desatualizadas), é possível baixar o binário diretamente em [releases.hashicorp.com/terraform](https://releases.hashicorp.com/terraform/).
+![Verificação das versões instaladas](assets/01-versoes.png)
 
 ---
 
-## 3. Configuração das Credenciais AWS
+## Configurando as credenciais AWS
 
-### 3.1 Criar IAM User no Console AWS
+Primeiro criei um IAM User no console da AWS em **IAM → Users → Create user**, com a permissão `AmazonEC2FullAccess` e gerei uma Access Key para uso no terminal.
 
-1. Acesse **IAM → Users → Create user**
-2. Nome: `terraform-user`
-3. Permissão: `AmazonEC2FullAccess` (Attach policies directly)
-4. Em **Security credentials → Access keys**, gere uma chave para **CLI**
-5. Anote o **Access Key ID** e o **Secret Access Key**
-
-### 3.2 Configurar localmente
+Depois configurei localmente:
 
 ```bash
 aws configure
 ```
 
-```
-AWS Access Key ID [None]: ****************
-AWS Secret Access Key [None]: ****************
-Default region name [None]: sa-east-1
-Default output format [None]: json
-```
-
-### 3.3 Verificar autenticação
-
-```bash
-aws sts get-caller-identity
-```
-
-```json
-{
-    "UserId": "AIDAXAQBISFG...",
-    "Account": "482112737613",
-    "Arn": "arn:aws:iam::482112737613:user/terraform-user"
-}
-```
+Preenchi com o Access Key ID, Secret Access Key, região `sa-east-1` e formato de saída `json`. Para confirmar que estava autenticado corretamente, rodei `aws sts get-caller-identity` e o retorno mostrou o ARN do usuário `terraform-user`.
 
 ---
 
-## 4. Estrutura dos Arquivos Terraform
+## Estrutura dos arquivos
 
-```
-terraform-aws-iac/
-├── terraform.tf        # Bloco terraform: versão mínima e provider necessário
-├── main.tf             # Provider AWS, data source AMI e resource EC2
-├── .gitignore          # Exclui .terraform/, tfstate e arquivos sensíveis
-└── README.md           # Documentação do projeto
-```
+O projeto tem dois arquivos principais:
 
-### `terraform.tf`
-
-Define os requisitos de versão do Terraform e do provider AWS.
+**`terraform.tf`** — declara qual versão do Terraform e do provider AWS são necessários:
 
 ```hcl
 terraform {
@@ -126,9 +62,7 @@ terraform {
 }
 ```
 
-### `main.tf`
-
-Define o provider, busca dinamicamente a AMI Ubuntu mais recente e cria a instância EC2.
+**`main.tf`** — configura o provider, busca a AMI do Ubuntu mais recente de forma dinâmica (sem hardcoded) e define a instância EC2:
 
 ```hcl
 provider "aws" {
@@ -156,240 +90,123 @@ resource "aws_instance" "app_server" {
 }
 ```
 
-> **Por que `t3.micro`?** Na região `sa-east-1` (São Paulo) o tipo Free Tier elegível é `t3.micro` — diferente do `t2.micro` usado nas demais regiões.
+> **Observação:** o tutorial usa `t2.micro`, mas na região `sa-east-1` (São Paulo) esse tipo não é elegível para o Free Tier. Rodei `aws ec2 describe-instance-types --filters "Name=free-tier-eligible,Values=true"` para descobrir que o tipo correto para essa região é `t3.micro`.
 
 ---
 
-## 5. Inicialização — `terraform init`
+## terraform init
 
-O `terraform init` baixa o provider AWS e prepara o diretório de trabalho.
+O primeiro comando a rodar é o `terraform init`. Ele inicializa o diretório de trabalho e faz o download do provider AWS:
 
 ```bash
 terraform init
 ```
 
-```
-Initializing provider plugins found in the configuration...
-- Finding hashicorp/aws versions matching "~> 5.92"...
-- Installing hashicorp/aws v5.100.0...
-- Installed hashicorp/aws v5.100.0 (signed by HashiCorp)
+![Output do terraform init](assets/02-terraform-init.png)
 
-Initializing the backend...
-
-Terraform has created a lock file .terraform.lock.hcl to record the provider
-selections it made above. Include this file in your version control repository
-so that Terraform can guarantee to make the same selections by default when
-you run "terraform init" in the future.
-
-Terraform has been successfully initialized!
-
-You may now begin working with Terraform. Try running "terraform plan" to see
-any changes that are required for your infrastructure. All Terraform commands
-should now work.
-```
+O Terraform baixou o provider `hashicorp/aws v5.100.0` e criou o arquivo `.terraform.lock.hcl` para fixar a versão usada.
 
 ---
 
-## 6. Formatação e Validação
+## terraform fmt e terraform validate
 
-### `terraform fmt`
-
-Formata os arquivos `.tf` seguindo o estilo padrão do Terraform.
+Antes de aplicar, é boa prática formatar o código e validar a configuração:
 
 ```bash
 terraform fmt
-```
-
-Sem output significa que os arquivos já estavam formatados corretamente.
-
-### `terraform validate`
-
-Verifica se a configuração é sintaticamente válida.
-
-```bash
 terraform validate
 ```
 
-```
-Success! The configuration is valid.
-```
+![Output do fmt e validate](assets/03-fmt-validate.png)
+
+O `fmt` não retornou nada porque os arquivos já estavam no formato correto. O `validate` confirmou que a configuração é válida.
 
 ---
 
-## 7. Planejamento — `terraform plan`
+## terraform plan
 
-Exibe o que será criado, modificado ou destruído **sem realizar nenhuma alteração real**.
+O `plan` mostra exatamente o que o Terraform vai criar, modificar ou destruir — sem fazer nada ainda. É útil para revisar antes de aplicar:
 
 ```bash
 terraform plan
 ```
 
-```
-data.aws_ami.ubuntu: Reading...
-data.aws_ami.ubuntu: Read complete after 0s [id=ami-0b17d8f9ce1b14ec1]
+![Output do terraform plan](assets/04-terraform-plan.png)
 
-Terraform used the selected providers to generate the following execution plan.
-Resource actions are indicated with the following symbols:
-  + create
-
-Terraform will perform the following actions:
-
-  # aws_instance.app_server will be created
-  + resource "aws_instance" "app_server" {
-      + ami                         = "ami-0b17d8f9ce1b14ec1"
-      + instance_type               = "t3.micro"
-      + tags                        = {
-          + "Name" = "learn-terraform"
-        }
-      + (demais atributos conhecidos após apply)
-    }
-
-Plan: 1 to add, 0 to change, 0 to destroy.
-```
-
-O `data source` `aws_ami` buscou automaticamente a AMI mais recente do Ubuntu 24.04 disponível em `sa-east-1`.
+O data source `aws_ami` já buscou a AMI mais recente do Ubuntu 24.04 disponível em `sa-east-1` (`ami-0b17d8f9ce1b14ec1`). O plano mostra `1 to add, 0 to change, 0 to destroy`.
 
 ---
 
-## 8. Aplicação — `terraform apply`
+## terraform apply
 
-Cria efetivamente os recursos na AWS conforme o plano.
+O `apply` executa o plano e cria os recursos na AWS:
 
 ```bash
 terraform apply -auto-approve
 ```
 
-```
-data.aws_ami.ubuntu: Reading...
-data.aws_ami.ubuntu: Read complete after 1s [id=ami-0b17d8f9ce1b14ec1]
+![Output do terraform apply](assets/05-terraform-apply.png)
 
-Terraform will perform the following actions:
-
-  # aws_instance.app_server will be created
-  + resource "aws_instance" "app_server" {
-      + ami           = "ami-0b17d8f9ce1b14ec1"
-      + instance_type = "t3.micro"
-      + tags = {
-          + "Name" = "learn-terraform"
-        }
-    }
-
-Plan: 1 to add, 0 to change, 0 to destroy.
-
-aws_instance.app_server: Creating...
-aws_instance.app_server: Still creating... [10s elapsed]
-aws_instance.app_server: Creation complete after 13s [id=i-037592dd2c8c050f4]
-
-Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
-```
-
-A instância foi criada em **13 segundos** com o ID `i-037592dd2c8c050f4`.
+A instância foi criada em 13 segundos com o ID `i-06439a33ab3d6c9cf`.
 
 ---
 
-## 9. Inspeção do Estado
+## Inspecionando o estado
 
-### `terraform state list`
-
-Lista todos os recursos gerenciados pelo Terraform.
+O Terraform guarda o estado da infraestrutura localmente no `terraform.tfstate`. Para consultar o que está sendo gerenciado:
 
 ```bash
 terraform state list
-```
-
-```
-data.aws_ami.ubuntu
-aws_instance.app_server
-```
-
-### `terraform show`
-
-Exibe o estado completo com todos os atributos dos recursos provisionados.
-
-```bash
 terraform show
 ```
 
-```hcl
-# aws_instance.app_server:
-resource "aws_instance" "app_server" {
-    ami                         = "ami-0b17d8f9ce1b14ec1"
-    arn                         = "arn:aws:ec2:sa-east-1:482112737613:instance/i-037592dd2c8c050f4"
-    availability_zone           = "sa-east-1a"
-    id                          = "i-037592dd2c8c050f4"
-    instance_state              = "running"
-    instance_type               = "t3.micro"
-    private_dns                 = "ip-172-31-10-142.sa-east-1.compute.internal"
-    private_ip                  = "172.31.10.142"
-    public_dns                  = "ec2-52-67-167-197.sa-east-1.compute.amazonaws.com"
-    public_ip                   = "52.67.167.197"
-    tags = {
-        "Name" = "learn-terraform"
-    }
-}
-```
+![Output do state list e show](assets/06-terraform-state.png)
+
+O `state list` retorna os dois recursos: o data source da AMI e a instância EC2. O `show` exibe todos os atributos da instância, incluindo IP público, DNS, availability zone e estado.
 
 ---
 
-## 10. Recursos Provisionados na AWS
+## Recursos provisionados na AWS
 
-### Instância EC2
+Abaixo estão os prints do console da AWS comprovando a instância criada:
 
-| Atributo | Valor |
+**Lista de instâncias EC2 na região sa-east-1 (São Paulo):**
+
+![Console AWS — lista de instâncias](assets/ec2-console-instancia.png)
+
+**Detalhes da instância `learn-terraform`:**
+
+![Console AWS — detalhes da instância](assets/ec2-detalhes-instancia.png)
+
+| Campo | Valor |
 |---|---|
-| **Instance ID** | `i-037592dd2c8c050f4` |
-| **Tipo** | `t3.micro` |
-| **AMI** | `ami-0b17d8f9ce1b14ec1` (Ubuntu 24.04 Noble) |
-| **Região** | `sa-east-1` (São Paulo) |
-| **Availability Zone** | `sa-east-1a` |
-| **Estado** | `running` |
-| **IP Público** | `52.67.167.197` |
-| **IP Privado** | `172.31.10.142` |
-| **DNS Público** | `ec2-52-67-167-197.sa-east-1.compute.amazonaws.com` |
-| **Tag Name** | `learn-terraform` |
-| **Volume Root** | `vol-0413d8b9336055860` — 8 GB gp3 |
-| **Security Group** | `sg-098058357a9235baf` (default) |
-| **ARN** | `arn:aws:ec2:sa-east-1:482112737613:instance/i-037592dd2c8c050f4` |
-
-### AMI Utilizada
-
-| Atributo | Valor |
-|---|---|
-| **AMI ID** | `ami-0b17d8f9ce1b14ec1` |
-| **Nome** | `ubuntu-noble-24.04-amd64-server-20260604` |
-| **Sistema Operacional** | Ubuntu 24.04 LTS (Noble Numbat) |
-| **Arquitetura** | `x86_64` |
-| **Tipo de Virtualização** | `hvm` |
-| **Owner** | `099720109477` (Canonical) |
-| **Data de criação** | 2026-06-04 |
+| Instance ID | `i-06439a33ab3d6c9cf` |
+| Tipo | `t3.micro` |
+| AMI | `ami-0b17d8f9ce1b14ec1` — Ubuntu 24.04 LTS |
+| Região | `sa-east-1` — América do Sul (São Paulo) |
+| Availability Zone | `sa-east-1a` |
+| IP Público | `54.233.79.212` |
+| IP Privado | `172.31.1.133` |
+| Estado | `running` |
 
 ---
 
-## 11. Destruição da Infraestrutura — `terraform destroy`
+## terraform destroy
 
-Após concluir a atividade, os recursos foram destruídos para evitar cobranças.
+Após finalizar a atividade, destruí a infraestrutura para evitar cobranças:
 
 ```bash
 terraform destroy -auto-approve
 ```
 
-```
-aws_instance.app_server: Destroying... [id=i-037592dd2c8c050f4]
-aws_instance.app_server: Still destroying... [10s elapsed]
-aws_instance.app_server: Still destroying... [20s elapsed]
-aws_instance.app_server: Still destroying... [30s elapsed]
-aws_instance.app_server: Destruction complete after 32s
+![Output do terraform destroy](assets/07-terraform-destroy.png)
 
-Destroy complete! Resources: 1 destroyed.
-```
-
-> O `terraform destroy` remove **todos** os recursos gerenciados pelo estado atual. Sempre execute antes de encerrar uma atividade para não gerar custos desnecessários.
+A instância foi terminada em 31 segundos. O Terraform zerou o estado — `0 to add, 0 to change, 1 to destroy`.
 
 ---
 
-## 12. Referências
+## Referências
 
-- [HashiCorp Terraform — Get Started AWS](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-create)
-- [AWS Free Tier](https://aws.amazon.com/free/)
+- [HashiCorp — Get Started AWS](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-create)
 - [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [Ubuntu AMIs na AWS](https://cloud-images.ubuntu.com/locator/ec2/)
+- [AWS Free Tier](https://aws.amazon.com/free/)
